@@ -159,9 +159,8 @@ func (h *HTTPGateway) returnSpans(spanPages []tracestore.SpanPage, err error, w 
 	if len(spanPages) == 0 {
 		errorResponse := api_v3.GRPCGatewayError{
 			Error: &api_v3.GRPCGatewayError_GRPCGatewayErrorDetails{
-				HttpCode: http.StatusNotFound, // this is weird for returning a collection, because the collection does
-				// exist, it just is empty. For a single trace it makes sense, but I don't think it makes sense for a search
-				Message: "No spans found",
+				HttpCode: http.StatusNotFound,
+				Message:  "No spans found",
 			},
 		}
 		resp, _ := json.Marshal(&errorResponse)
