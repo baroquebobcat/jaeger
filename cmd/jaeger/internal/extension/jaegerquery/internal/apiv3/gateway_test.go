@@ -156,10 +156,11 @@ func (gw *testGateway) runGatewayGetTrace(t *testing.T) {
 }
 
 func (gw *testGateway) runGatewayFindSpans(t *testing.T) {
+	enableStructuredFilters(t)
 	q, qp := mockFindSpansQueries()
 	gw.reader.On("FindSpans", matchContext, qp).
-		Return(iter.Seq2[[]tracestore.SpanPage, error](func(yield func([]tracestore.SpanPage, error) bool) {
-			yield([]tracestore.SpanPage{{Spans: makeTestTrace(), NextPageToken: ""}}, nil)
+		Return(iter.Seq2[tracestore.PageChunk[ptrace.Traces], error](func(yield func(tracestore.PageChunk[ptrace.Traces], error) bool) {
+			yield(tracestore.PageChunk[ptrace.Traces]{Results: makeTestTrace(), NextPageToken: ""}, nil)
 		})).Once()
 	gw.verifyGetSpans(t, "/api/v3/spans?"+q.Encode(), traceID)
 }

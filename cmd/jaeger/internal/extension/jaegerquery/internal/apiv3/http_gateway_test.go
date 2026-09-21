@@ -293,6 +293,7 @@ func TestHTTPGatewayFindTracesEmptyResponse(t *testing.T) {
 }
 
 func TestHTTPGatewayFindSpansEmptyResponse(t *testing.T) {
+	enableStructuredFilters(t)
 	q, qp := mockFindSpansQueries()
 	r, err := http.NewRequest(http.MethodGet, "/api/v3/spans?"+q.Encode(), http.NoBody)
 	require.NoError(t, err)
@@ -301,8 +302,7 @@ func TestHTTPGatewayFindSpansEmptyResponse(t *testing.T) {
 	gw := setupHTTPGatewayNoServerWithSearchCapabilities(t, "", tracestore.SearchCapabilities{SpanSearch: true})
 	gw.reader.
 		On("FindSpans", matchContext, qp).
-		Return(iter.Seq2[[]tracestore.SpanPage, error](func(yield func([]tracestore.SpanPage, error) bool) {
-			yield([]tracestore.SpanPage{}, nil)
+		Return(iter.Seq2[tracestore.PageChunk[ptrace.Traces], error](func(func(tracestore.PageChunk[ptrace.Traces], error) bool) {
 		})).Once()
 
 	gw.router.ServeHTTP(w, r)
@@ -523,6 +523,7 @@ func TestHTTPGatewayFindSpansErrors(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "query.startTimeMin and query.startTimeMax are required")
 	})
 	t.Run("span reader error", func(t *testing.T) {
+		enableStructuredFilters(t)
 		q, qp := mockFindSpansQueries()
 		r, err := http.NewRequest(http.MethodGet, "/api/v3/spans?"+q.Encode(), http.NoBody)
 		require.NoError(t, err)
@@ -531,8 +532,8 @@ func TestHTTPGatewayFindSpansErrors(t *testing.T) {
 		gw := setupHTTPGatewayNoServer(t, "")
 		gw.reader.
 			On("FindSpans", matchContext, qp).
-			Return(iter.Seq2[[]tracestore.SpanPage, error](func(yield func([]tracestore.SpanPage, error) bool) {
-				yield(nil, assert.AnError)
+			Return(iter.Seq2[tracestore.PageChunk[ptrace.Traces], error](func(yield func(tracestore.PageChunk[ptrace.Traces], error) bool) {
+				yield(tracestore.PageChunk[ptrace.Traces]{}, assert.AnError)
 			})).Once()
 
 		gw.router.ServeHTTP(w, r)
